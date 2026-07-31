@@ -1,36 +1,67 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Novagait AI Concierge
 
-## Getting Started
+[![CI](https://github.com/lotus-innovations/novagait-concierge/actions/workflows/ci.yml/badge.svg)](https://github.com/lotus-innovations/novagait-concierge/actions/workflows/ci.yml)
 
-First, run the development server:
+An AI patient concierge for the fictional Novagait Physical Therapy clinic:
+grounded answers with citations from the clinic's own documents, a real
+multi-step booking action driving a visible automation chain, context-carrying
+human handoff, and an admin panel with a full audit trail — all inside provably
+working containment (session caps, rate limits, a daily budget breaker).
+
+> Demonstration project by Lotus Innovations. "Novagait" is a fictional brand;
+> all data is synthetic. Not affiliated with any real clinic or entity.
+
+Live: <https://concierge.lotusinnovations.io> · Clinic site (embeds the
+widget): <https://demo.lotusinnovations.io> · Built by
+[Lotus Innovations](https://lotusinnovations.io)
+
+## Architecture
+
+- **Next.js (App Router, TypeScript)** on Vercel — widget bundle, standalone
+  chat page, `/api/*`, and `/admin` in one deployment.
+- **Claude (Haiku 4.5)** via `@anthropic-ai/sdk` — system prompt and tool
+  schemas are versioned files under `src/agent/`, never inline strings.
+- **Retrieval** — dependency-free keyword/BM25 chunk retrieval over `kb/`
+  (synthetic clinic documents); answers cite their source document.
+- **Storage** — Upstash Redis (Vercel Marketplace) behind a thin `Store`
+  interface (`src/lib/store.ts`); an in-memory driver backs local dev and
+  key-free CI. All data is ephemeral demo state by design — nothing in the
+  store is worth backing up.
+- A full architecture doc with diagram lands in `docs/architecture.md` at
+  release.
+
+## Environment
+
+| Variable                                | Purpose                                                                                                                      |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `ANTHROPIC_API_KEY`                     | Dedicated, hard-capped key. Lives ONLY in Vercel project env (production). Never in GitHub, never in CI.                     |
+| `ADMIN_PASSWORD`                        | Gates `/admin`.                                                                                                              |
+| `CRON_SECRET`                           | Authorizes the nightly `/api/maintenance/reset` (Vercel Cron sends it automatically).                                        |
+| `DAILY_BUDGET_USD`                      | Daily spend breaker threshold. Default 0.66 (= $20 monthly hard cap / 30). Over threshold the widget enters "capacity" mode. |
+| `MOCK_AGENT`                            | `1` forces the scripted mock backend (used by preview deploys and e2e) so no key is needed and no budget is spent.           |
+| `KV_REST_API_URL` / `KV_REST_API_TOKEN` | Injected by the Upstash Vercel Marketplace integration.                                                                      |
+
+## Local development
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+nvm use          # Node 22
+npm ci
+npm run dev      # http://localhost:3000 — memory store, no key required
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`npm run lint` (ESLint + Prettier check), `npm run typecheck`,
+`npm run test` (Vitest), `npm run build`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Operations
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Production deploys: Vercel. Runtime errors: Vercel runtime logs.
+- Nightly reset: Vercel Cron hits `/api/maintenance/reset`, restoring seeded
+  demo data (`src/lib/seed.ts`).
+- Known dependency advisories: `sharp`/libvips CVEs inherited via `next`
+  (image optimizer). This app processes no untrusted images; the fix arrives
+  with the upstream `next` bump via Dependabot.
 
-## Learn More
+## License
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Source-visible demonstration project. © Lotus Innovations. All rights
+reserved. Public visibility is for evidence, not reuse.
