@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local agent tooling (Upstash marketplace skill install); not part of the app
+.agents/
+.claude/
+skills-lock.json
