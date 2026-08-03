@@ -3,6 +3,8 @@ import { z } from "zod";
 import { getStore } from "@/lib/store";
 import { DEMO_PREFIX } from "@/lib/seed";
 import { runAgentTurn } from "@/agent/agent";
+import { checkRateLimit, clientIp } from "@/lib/ratelimit";
+import { HANDOFF_TOOL_NAME } from "@/agent/tools";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +18,24 @@ export const dynamic = "force-dynamic";
 const MAX_MESSAGE_CHARS = 1000;
 const SESSION_TTL_SECONDS = 60 * 60 * 24;
 const HISTORY_TURNS = 20;
+/** Spec 01 §6: 15 user messages per session, then a walkthrough CTA. */
+const SESSION_CAP = 15;
+const CONTACT_URL = "https://lotusinnovations.io/#contact";
+
+const CAP_REPLY =
+  "You've reached the end of this demo conversation (15 messages). Thanks " +
+  "for trying the Novagait concierge! To see the full product in action - " +
+  "including the admin panel and automation pipeline - book a live " +
+  `walkthrough with Lotus Innovations: ${CONTACT_URL}`;
+
+const CAPACITY_REPLY =
+  "The demo concierge has reached its daily capacity and is taking a " +
+  "breather until tomorrow's reset. To see a full walkthrough in the " +
+  `meantime, contact Lotus Innovations: ${CONTACT_URL}`;
+
+const RATE_LIMIT_REPLY =
+  "You're sending messages faster than this demo allows (30 per hour). " +
+  "Please pause and try again in a little while.";
 
 const bodySchema = z.object({
   sessionId: z.string().regex(/^[a-zA-Z0-9_-]{8,64}$/, "invalid session id"),
@@ -67,8 +87,60 @@ export async function POST(req: NextRequest) {
   }
 
   const store = getStore();
+
+  // Containment gate 1 (spec 01 §6): per-IP sliding-window rate limit.
+  const ip = clientIp(req.headers);
+  const rate = await checkRateLimit(store, ip);
+  if (!rate.allowed) {
+    await store.listPush(`${DEMO_PREFIX}audit`, {
+      at: new Date().toISOString(),
+      type: "containment.rate-limit",
+      sessionId,
+      count: rate.count,
+    });
+    return NextResponse.json(
+      { reply: RATE_LIMIT_REPLY, sources: [], rateLimited: true },
+      { status: 429 },
+    );
+  }
+
+  // Containment gate 2: daily budget breaker -> "capacity" mode. Friendly
+  // notice only, never a raw error.
+  const day = new Date().toISOString().slice(0, 10);
+  const budgetLimitMicro = Math.round(
+    Number(process.env.DAILY_BUDGET_USD ?? "0.66") * 1_000_000,
+  );
+  const spentMicro =
+    (await store.get<number>(`${DEMO_PREFIX}budget:${day}`)) ?? 0;
+  if (spentMicro >= budgetLimitMicro) {
+    await store.listPush(`${DEMO_PREFIX}audit`, {
+      at: new Date().toISOString(),
+      type: "containment.budget-breaker",
+      sessionId,
+      spentMicro,
+      budgetLimitMicro,
+    });
+    return NextResponse.json({
+      reply: CAPACITY_REPLY,
+      sources: [],
+      capacity: true,
+    });
+  }
+
   const sessionKey = `${DEMO_PREFIX}session:${sessionId}`;
   const transcript = (await store.get<TranscriptEntry[]>(sessionKey)) ?? [];
+
+  // Containment gate 3: session cap (user messages), then a walkthrough CTA.
+  const userMessages = transcript.filter((t) => t.role === "user").length;
+  if (userMessages >= SESSION_CAP) {
+    await store.listPush(`${DEMO_PREFIX}audit`, {
+      at: new Date().toISOString(),
+      type: "containment.session-cap",
+      sessionId,
+      userMessages,
+    });
+    return NextResponse.json({ reply: CAP_REPLY, sources: [], capped: true });
+  }
 
   const history = transcript
     .slice(-HISTORY_TURNS)
@@ -95,12 +167,11 @@ export async function POST(req: NextRequest) {
   );
   await store.set(sessionKey, transcript, { ttlSeconds: SESSION_TTL_SECONDS });
 
-  // Daily cost meter in micro-dollars (integer-safe for incrBy); the Task 4
-  // budget breaker reads this key against DAILY_BUDGET_USD.
-  const day = now.slice(0, 10);
+  // Daily cost meter in micro-dollars (integer-safe for incrBy); the budget
+  // breaker gate above reads this key against DAILY_BUDGET_USD.
   const costMicro = Math.round(turn.usage.costUsd * 1_000_000);
   if (costMicro > 0) {
-    await store.incrBy(`${DEMO_PREFIX}budget:${day}`, costMicro, {
+    await store.incrBy(`${DEMO_PREFIX}budget:${now.slice(0, 10)}`, costMicro, {
       ttlSeconds: 60 * 60 * 48,
     });
   }
@@ -124,5 +195,7 @@ export async function POST(req: NextRequest) {
     reply: turn.reply,
     sources: turn.sources,
     mocked: turn.mocked,
+    handoff:
+      turn.toolCalls.some((c) => c.name === HANDOFF_TOOL_NAME) || undefined,
   });
 }

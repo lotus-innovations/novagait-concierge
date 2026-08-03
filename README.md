@@ -38,6 +38,12 @@ widget): <https://demo.lotusinnovations.io> · Built by
   (`POST /api/admin/failure-toggle`) makes the notification step fail once
   (alert + retry -> success). Stepper view: `/admin/automation` (Basic auth,
   user `admin`). Evidence: `docs/evidence/task3-transcripts.md`.
+- **Handoff + containment** — `request_human_handoff` tool queues a
+  model-written summary for the Front Desk view and marks the session; the
+  chat route enforces, in order: per-IP sliding-window rate limit (30/hr),
+  daily budget breaker (capacity mode, never raw errors), and a 15-message
+  session cap with a walkthrough CTA. Every trip writes a typed audit
+  entry. Evidence: `docs/evidence/task4-transcripts.md`.
 - A full architecture doc with diagram lands in `docs/architecture.md` at
   release.
 

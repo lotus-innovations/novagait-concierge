@@ -3,7 +3,12 @@ import type { Store } from "@/lib/store";
 import { loadKb } from "./kb";
 import { getIndex } from "./retrieval";
 import { buildSystemPrompt, PROMPT_VERSION } from "./system-prompt";
-import { makeBookingTool, TOOLS_VERSION, type ToolCallRecord } from "./tools";
+import {
+  makeBookingTool,
+  makeHandoffTool,
+  TOOLS_VERSION,
+  type ToolCallRecord,
+} from "./tools";
 
 /**
  * Agent core: retrieval-grounded turn against claude-haiku-4-5 (spec 01 §2;
@@ -128,12 +133,14 @@ export async function runAgentTurn(
     };
   }
 
-  const bookingTool = makeBookingTool(input.store, input.sessionId, toolCalls);
   const runner = getClient().beta.messages.toolRunner({
     model: MODEL_ID,
     max_tokens: MAX_TOKENS,
     system: buildSystemPrompt(excerpts),
-    tools: [bookingTool],
+    tools: [
+      makeBookingTool(input.store, input.sessionId, toolCalls),
+      makeHandoffTool(input.store, input.sessionId, toolCalls),
+    ],
     max_iterations: 4,
     messages: [
       ...input.history.map((m) => ({ role: m.role, content: m.content })),
