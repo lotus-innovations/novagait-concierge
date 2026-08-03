@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.0.1 — 2026-08-03
+
+- Widget: render `**bold**` in replies as `<strong>` and preserve
+  single-newline line breaks (bullet lists no longer collapse). Rendering
+  stays text-node only; no model HTML is parsed.
+
 ## v1.0.0 — 2026-08-03
 
 First complete release of the Novagait AI Concierge demo. All four

@@ -324,9 +324,34 @@ class ConciergeWidget {
   private appendParagraphs(container: HTMLElement, text: string): void {
     for (const part of text.split(/\n{2,}/)) {
       const p = document.createElement("p");
-      p.textContent = part.trim();
+      part
+        .trim()
+        .split("\n")
+        .forEach((line, i) => {
+          if (i > 0) p.appendChild(document.createElement("br"));
+          this.appendInline(p, line);
+        });
       if (p.textContent) container.appendChild(p);
     }
+  }
+
+  /**
+   * Minimal inline rendering: model replies often use **bold**; render it
+   * as <strong> instead of literal asterisks. Everything goes through text
+   * nodes - no HTML from the model is ever parsed.
+   */
+  private appendInline(parent: HTMLElement, text: string): void {
+    const segments = text.split(/\*\*([^*]+)\*\*/g);
+    segments.forEach((segment, i) => {
+      if (!segment) return;
+      if (i % 2 === 1) {
+        const strong = document.createElement("strong");
+        strong.textContent = segment;
+        parent.appendChild(strong);
+      } else {
+        parent.appendChild(document.createTextNode(segment));
+      }
+    });
   }
 
   private appendUser(text: string): void {
