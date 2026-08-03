@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
 
   let turn;
   try {
-    turn = await runAgentTurn({ history, message });
+    turn = await runAgentTurn({ history, message, store, sessionId });
   } catch (err) {
     console.error("agent turn failed", err);
     return NextResponse.json(
@@ -116,6 +116,7 @@ export async function POST(req: NextRequest) {
     toolsVersion: turn.toolsVersion,
     retrieved: turn.retrieved,
     sources: turn.sources,
+    toolCalls: turn.toolCalls.map((c) => ({ name: c.name, input: c.input })),
     usage: turn.usage,
   });
 

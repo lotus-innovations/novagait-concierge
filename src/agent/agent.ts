@@ -1,12 +1,15 @@
 import Anthropic from "@anthropic-ai/sdk";
+import type { Store } from "@/lib/store";
 import { loadKb } from "./kb";
 import { getIndex } from "./retrieval";
 import { buildSystemPrompt, PROMPT_VERSION } from "./system-prompt";
-import { ACTIVE_TOOLS, TOOLS_VERSION } from "./tools";
+import { makeBookingTool, TOOLS_VERSION, type ToolCallRecord } from "./tools";
 
 /**
  * Agent core: retrieval-grounded turn against claude-haiku-4-5 (spec 01 §2;
  * model id verified via the claude-api skill at build time, 2026-08-02).
+ * The booking tool runs through the SDK's beta tool runner, which loops
+ * request -> tool execution -> follow-up until the model finishes.
  *
  * MOCK_AGENT=1 (CI, previews) returns a deterministic reply so the whole
  * pipeline is testable without a key ever reaching CI.
@@ -26,6 +29,9 @@ export interface AgentTurnInput {
   history: { role: "user" | "assistant"; content: string }[];
   /** The new user message. */
   message: string;
+  /** Store + session for tool executors (booking writes, chain records). */
+  store: Store;
+  sessionId: string;
 }
 
 export interface AgentTurnResult {
@@ -34,6 +40,8 @@ export interface AgentTurnResult {
   sources: string[];
   /** Document titles retrieval injected this turn (superset of sources). */
   retrieved: string[];
+  /** Tool invocations executed this turn (audit log). */
+  toolCalls: ToolCallRecord[];
   usage: {
     inputTokens: number;
     outputTokens: number;
@@ -91,8 +99,10 @@ export async function runAgentTurn(
   input: AgentTurnInput,
 ): Promise<AgentTurnResult> {
   const { excerpts, retrieved } = buildExcerpts(input.message);
+  const toolCalls: ToolCallRecord[] = [];
   const base = {
     retrieved,
+    toolCalls,
     promptVersion: PROMPT_VERSION,
     toolsVersion: TOOLS_VERSION,
     model: MODEL_ID,
@@ -118,29 +128,44 @@ export async function runAgentTurn(
     };
   }
 
-  const response = await getClient().messages.create({
+  const bookingTool = makeBookingTool(input.store, input.sessionId, toolCalls);
+  const runner = getClient().beta.messages.toolRunner({
     model: MODEL_ID,
     max_tokens: MAX_TOKENS,
     system: buildSystemPrompt(excerpts),
-    tools: ACTIVE_TOOLS.length ? ACTIVE_TOOLS : undefined,
+    tools: [bookingTool],
+    max_iterations: 4,
     messages: [
       ...input.history.map((m) => ({ role: m.role, content: m.content })),
       { role: "user" as const, content: input.message },
     ],
   });
 
-  const text = response.content
-    .filter((b): b is Anthropic.TextBlock => b.type === "text")
+  // Iterate so usage is accumulated across every loop iteration, not just
+  // the final message.
+  let inputTokens = 0;
+  let outputTokens = 0;
+  let cacheRead = 0;
+  let cacheWrite = 0;
+  let finalMessage: Anthropic.Beta.BetaMessage | null = null;
+  for await (const message of runner) {
+    inputTokens += message.usage.input_tokens;
+    outputTokens += message.usage.output_tokens;
+    cacheRead += message.usage.cache_read_input_tokens ?? 0;
+    cacheWrite += message.usage.cache_creation_input_tokens ?? 0;
+    finalMessage = message;
+  }
+  if (!finalMessage) throw new Error("tool runner produced no message");
+
+  const text = finalMessage.content
+    .filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === "text")
     .map((b) => b.text)
     .join("");
   const { reply, sources } = extractSources(text);
 
-  const u = response.usage;
-  const cacheRead = u.cache_read_input_tokens ?? 0;
-  const cacheWrite = u.cache_creation_input_tokens ?? 0;
   const costUsd =
-    u.input_tokens * INPUT_USD_PER_TOKEN +
-    u.output_tokens * OUTPUT_USD_PER_TOKEN +
+    inputTokens * INPUT_USD_PER_TOKEN +
+    outputTokens * OUTPUT_USD_PER_TOKEN +
     cacheRead * CACHE_READ_USD_PER_TOKEN +
     cacheWrite * CACHE_WRITE_USD_PER_TOKEN;
 
@@ -149,8 +174,8 @@ export async function runAgentTurn(
     reply,
     sources,
     usage: {
-      inputTokens: u.input_tokens,
-      outputTokens: u.output_tokens,
+      inputTokens,
+      outputTokens,
       cacheReadTokens: cacheRead,
       cacheWriteTokens: cacheWrite,
       costUsd,

@@ -9,7 +9,12 @@ import {
 } from "@/agent/retrieval";
 import { extractSources, isMockMode, runAgentTurn } from "@/agent/agent";
 import { buildSystemPrompt, PROMPT_VERSION } from "@/agent/system-prompt";
-import { bookAppointmentTool } from "@/agent/tools";
+import {
+  bookingInputSchema,
+  makeBookingTool,
+  type ToolCallRecord,
+} from "@/agent/tools";
+import { newMemoryStore } from "@/lib/store";
 
 beforeEach(() => {
   __resetKbCacheForTests();
@@ -107,10 +112,37 @@ describe("system prompt", () => {
 
 describe("tool schemas", () => {
   it("booking tool requires service, location, window", () => {
-    const schema = bookAppointmentTool.input_schema as {
-      required: string[];
-    };
-    expect(schema.required).toEqual(["service", "location", "window"]);
+    expect(bookingInputSchema.safeParse({}).success).toBe(false);
+    expect(
+      bookingInputSchema.safeParse({
+        service: "Initial evaluation",
+        location: "Crestline Commons",
+        window: "weekday mornings",
+      }).success,
+    ).toBe(true);
+    expect(
+      bookingInputSchema.safeParse({
+        service: "Initial evaluation",
+        location: "Nonexistent Clinic",
+        window: "weekday mornings",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("executes a booking through the runnable tool", async () => {
+    const store = newMemoryStore();
+    const calls: ToolCallRecord[] = [];
+    const tool = makeBookingTool(store, "vitest-session", calls);
+    const result = await tool.run({
+      service: "Telehealth follow-up",
+      location: "Telehealth",
+      window: "Friday midday",
+    });
+    const parsed = JSON.parse(result as string);
+    expect(parsed.status).toBe("confirmed");
+    expect(parsed.reference).toMatch(/^NG-\d{4}$/);
+    expect(calls).toHaveLength(1);
+    expect(await store.listRange("demo:bookings", 0, -1)).toHaveLength(1);
   });
 });
 
@@ -120,6 +152,8 @@ describe("agent turn (mock mode)", () => {
     const turn = await runAgentTurn({
       history: [],
       message: "Do you take Medicare?",
+      store: newMemoryStore(),
+      sessionId: "vitest-session",
     });
     expect(turn.mocked).toBe(true);
     expect(turn.retrieved).toContain("Insurance FAQ");

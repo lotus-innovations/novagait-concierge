@@ -31,6 +31,13 @@ widget): <https://demo.lotusinnovations.io> · Built by
   grounded turn with per-turn audit logging and micro-dollar cost metering
   into the daily budget key. Live transcripts incl. a medical-advice refusal
   and an injection attempt: `docs/evidence/task2-transcripts.md`.
+- **Booking + automation chain** — the `book_appointment` tool (SDK beta
+  tool runner) writes the booking and drives a per-booking pipeline: intake
+  record -> CRM entry -> Slack-shaped notification -> draft invoice, with
+  attempt-level history. A demo failure toggle
+  (`POST /api/admin/failure-toggle`) makes the notification step fail once
+  (alert + retry -> success). Stepper view: `/admin/automation` (Basic auth,
+  user `admin`). Evidence: `docs/evidence/task3-transcripts.md`.
 - A full architecture doc with diagram lands in `docs/architecture.md` at
   release.
 
