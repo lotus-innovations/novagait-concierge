@@ -27,6 +27,10 @@ widget): <https://demo.lotusinnovations.io> · Built by
   interface (`src/lib/store.ts`); an in-memory driver backs local dev and
   key-free CI. All data is ephemeral demo state by design — nothing in the
   store is worth backing up.
+- **Chat endpoint** — `POST /api/chat` (`{sessionId, message}`): retrieval-
+  grounded turn with per-turn audit logging and micro-dollar cost metering
+  into the daily budget key. Live transcripts incl. a medical-advice refusal
+  and an injection attempt: `docs/evidence/task2-transcripts.md`.
 - A full architecture doc with diagram lands in `docs/architecture.md` at
   release.
 
