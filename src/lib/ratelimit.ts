@@ -7,7 +7,11 @@ import { DEMO_PREFIX } from "./seed";
  * fixed windows (previous bucket weighted by the un-elapsed fraction).
  */
 
-export const RATE_LIMIT_PER_HOUR = 30;
+/** Spec default 30; env override exists for the e2e lane, which would
+ * otherwise trip the limit from a single localhost IP. */
+export const RATE_LIMIT_PER_HOUR = Number(
+  process.env.RATE_LIMIT_PER_HOUR ?? "30",
+);
 const HOUR_MS = 60 * 60 * 1000;
 
 export async function checkRateLimit(

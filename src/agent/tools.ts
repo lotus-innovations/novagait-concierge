@@ -1,7 +1,7 @@
 import { betaZodTool } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
 import type { Store } from "@/lib/store";
-import { createBookingWithChain, type BookingInput } from "@/lib/bookings";
+import { createBookingWithChain } from "@/lib/bookings";
 import { DEMO_PREFIX } from "@/lib/seed";
 
 /**
@@ -64,6 +64,59 @@ export interface ToolCallRecord {
   result: string;
 }
 
+export type BookingToolInput = z.infer<typeof bookingInputSchema>;
+export type HandoffToolInput = z.infer<typeof handoffInputSchema>;
+
+/**
+ * Executors are separated from the zod-tool wrappers so the MOCK_AGENT path
+ * (CI, previews, e2e) can run the identical store writes on scripted trigger
+ * phrases without a model in the loop.
+ */
+export async function executeBookingTool(
+  store: Store,
+  sessionId: string,
+  input: BookingToolInput,
+): Promise<string> {
+  const { booking, chain } = await createBookingWithChain(store, {
+    ...input,
+    sessionId,
+  });
+  return JSON.stringify({
+    status: "confirmed",
+    reference: booking.reference,
+    service: booking.service,
+    location: booking.location,
+    provider: booking.provider,
+    window: booking.window,
+    automation: chain.status,
+    note: "Front desk will confirm the exact time by phone or email (demo: simulated).",
+  });
+}
+
+export async function executeHandoffTool(
+  store: Store,
+  sessionId: string,
+  input: HandoffToolInput,
+): Promise<string> {
+  const at = new Date().toISOString();
+  await store.listPush(`${DEMO_PREFIX}handoffs`, {
+    sessionId,
+    reason: input.reason,
+    summary: input.summary,
+    at,
+    status: "queued",
+  });
+  await store.set(
+    `${DEMO_PREFIX}session:${sessionId}:meta`,
+    { handedOff: true, at, reason: input.reason },
+    { ttlSeconds: 60 * 60 * 24 },
+  );
+  return JSON.stringify({
+    status: "handoff_queued",
+    note: "Front desk queue updated (demo: follow-up is simulated).",
+  });
+}
+
 /**
  * Build the runnable booking tool bound to this request's store + session.
  * `calls` collects an audit record per invocation.
@@ -83,20 +136,11 @@ export function makeBookingTool(
       "the user.",
     inputSchema: bookingInputSchema,
     run: async (input) => {
-      const { booking, chain } = await createBookingWithChain(store, {
-        ...(input as Omit<BookingInput, "sessionId">),
+      const result = await executeBookingTool(
+        store,
         sessionId,
-      });
-      const result = JSON.stringify({
-        status: "confirmed",
-        reference: booking.reference,
-        service: booking.service,
-        location: booking.location,
-        provider: booking.provider,
-        window: booking.window,
-        automation: chain.status,
-        note: "Front desk will confirm the exact time by phone or email (demo: simulated).",
-      });
+        input as BookingToolInput,
+      );
       calls.push({ name: BOOKING_TOOL_NAME, input, result });
       return result;
     },
@@ -124,23 +168,11 @@ export function makeHandoffTool(
       "tell the user a team member will follow up.",
     inputSchema: handoffInputSchema,
     run: async (input) => {
-      const at = new Date().toISOString();
-      await store.listPush(`${DEMO_PREFIX}handoffs`, {
+      const result = await executeHandoffTool(
+        store,
         sessionId,
-        reason: input.reason,
-        summary: input.summary,
-        at,
-        status: "queued",
-      });
-      await store.set(
-        `${DEMO_PREFIX}session:${sessionId}:meta`,
-        { handedOff: true, at, reason: input.reason },
-        { ttlSeconds: 60 * 60 * 24 },
+        input as HandoffToolInput,
       );
-      const result = JSON.stringify({
-        status: "handoff_queued",
-        note: "Front desk queue updated (demo: follow-up is simulated).",
-      });
       calls.push({ name: HANDOFF_TOOL_NAME, input, result });
       return result;
     },

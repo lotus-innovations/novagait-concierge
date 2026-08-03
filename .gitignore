@@ -44,3 +44,6 @@ next-env.d.ts
 .agents/
 .claude/
 skills-lock.json
+/public/widget.js
+/test-results/
+/playwright-report/

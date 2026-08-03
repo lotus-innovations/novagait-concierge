@@ -49,8 +49,52 @@ widget): <https://demo.lotusinnovations.io> · Built by
   Desk handoff queue, bookings/CRM/invoices, automation stepper history
   with the notifications feed. Server-rendered semantic HTML, AA contrast.
   Evidence: `docs/evidence/task5-admin.md`.
-- A full architecture doc with diagram lands in `docs/architecture.md` at
-  release.
+- **Chat widget** — one vanilla-TypeScript bundle (`widget/src`, built with
+  esbuild to `public/widget.js`, ~15 kB, no framework) renders inside a
+  shadow root so widget and host-page styles cannot collide. The same bundle
+  powers the floating launcher and the inline standalone page at `/chat`.
+  Keyboard operable end to end (focus trap while open, focus restore on
+  close, Escape closes), new messages announced via a polite live region,
+  AA contrast in both themes, reduced motion respected, 44px targets.
+- Full architecture doc with diagrams: `docs/architecture.md`.
+
+## Embedding the widget
+
+Add one script tag (this is exactly what the clinic site does):
+
+```html
+<script
+  src="https://concierge.lotusinnovations.io/widget.js"
+  defer
+  data-ngc-auto="1"
+></script>
+```
+
+That renders the floating launcher bottom-right and talks to this app's
+`/api/chat` cross-origin. Origins are allowlisted server-side
+(`src/lib/cors.ts`; default `https://demo.lotusinnovations.io`, override
+with `WIDGET_ALLOWED_ORIGINS`) — an unlisted site can load the script but
+its chat calls are refused by the browser.
+
+Data attributes / programmatic init:
+
+| Attribute           | `init()` option | Meaning                                                  |
+| ------------------- | --------------- | -------------------------------------------------------- |
+| `data-ngc-auto`     | —               | `1` = initialize on load (otherwise call `init()`)       |
+| `data-ngc-mode`     | `mode`          | `floating` (default) or `inline`                         |
+| `data-ngc-target`   | `target`        | Selector/element to fill (required for `inline`)         |
+| `data-ngc-endpoint` | `endpoint`      | Chat API URL (default: `/api/chat` on the script origin) |
+| `data-ngc-title`    | `title`         | Panel heading                                            |
+
+```html
+<div id="chat-root" style="height: 600px"></div>
+<script src="https://concierge.lotusinnovations.io/widget.js" defer></script>
+<script>
+  window.addEventListener("DOMContentLoaded", () =>
+    NovagaitConcierge.init({ mode: "inline", target: "#chat-root" }),
+  );
+</script>
+```
 
 ## Environment
 

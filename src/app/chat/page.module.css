@@ -1,0 +1,36 @@
+.main {
+  display: flex;
+  flex-direction: column;
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem;
+  min-height: 100dvh;
+}
+
+.heading {
+  margin: 0 0 0.25rem;
+  font-size: 1.35rem;
+}
+
+.hint {
+  margin: 0 0 1rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.hint a {
+  color: var(--primary);
+}
+
+.chatRoot {
+  flex: 1;
+  min-height: 480px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The widget host element should fill the container. */
+.chatRoot > :global(#novagait-concierge) {
+  display: flex;
+  flex: 1;
+}

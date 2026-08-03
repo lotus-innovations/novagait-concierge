@@ -1,0 +1,392 @@
+/* Novagait Concierge widget styles. Rendered inside a shadow root so the
+   host page's CSS cannot leak in (and vice versa). Token values mirror
+   design-tokens.json (novagait-web is the owner); every pair used here is a
+   WCAG 2.2 AA combination in both themes. System fonts only. */
+
+:host {
+  /* Reset inheritable properties from the host page. */
+  all: initial;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+
+  --bg: #ffffff;
+  --surface: #f8fafc;
+  --text: #0f172a;
+  --text-muted: #475569;
+  --primary: #4338ca;
+  --primary-hover: #3730a3;
+  --button-bg: #4338ca;
+  --on-primary: #ffffff;
+  --accent: #0f766e;
+  --error: #b91c1c;
+  --focus: #4338ca;
+  --border: #cbd5e1;
+  --shadow: 0 8px 30px rgba(15, 23, 42, 0.18);
+}
+
+@media (prefers-color-scheme: dark) {
+  :host {
+    --bg: #0b1220;
+    --surface: #1e293b;
+    --text: #f1f5f9;
+    --text-muted: #94a3b8;
+    --primary: #a5b4fc;
+    --primary-hover: #c7d2fe;
+    --button-bg: #4f46e5;
+    --on-primary: #ffffff;
+    --accent: #5eead4;
+    --error: #fca5a5;
+    --focus: #a5b4fc;
+    --border: #334155;
+    --shadow: 0 8px 30px rgba(0, 0, 0, 0.55);
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+textarea {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- Launcher (floating mode) ---------- */
+
+.launcher {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 2147483000;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  background: var(--button-bg);
+  color: var(--on-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow);
+}
+
+.launcher:hover {
+  background: var(--primary-hover);
+}
+
+@media (prefers-color-scheme: dark) {
+  .launcher:hover {
+    background: var(--button-bg);
+    border-color: var(--primary-hover);
+  }
+}
+
+.launcher svg {
+  width: 28px;
+  height: 28px;
+}
+
+/* ---------- Panel ---------- */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.root-floating .panel {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 2147483001;
+  width: min(400px, calc(100vw - 32px));
+  height: min(640px, calc(100dvh - 32px));
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+
+/* Small viewports (which is also what 400% zoom produces): full screen. */
+@media (max-width: 480px), (max-height: 520px) {
+  .root-floating .panel {
+    inset: 0;
+    width: 100vw;
+    height: 100dvh;
+    border-radius: 0;
+    border: none;
+  }
+}
+
+.root-inline {
+  display: flex;
+  flex: 1;
+  width: 100%;
+}
+
+.root-inline .panel {
+  flex: 1;
+  width: 100%;
+  min-height: 480px;
+  border-radius: 12px;
+}
+
+.panel[hidden] {
+  display: none;
+}
+
+/* ---------- Header ---------- */
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.header-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.tagline {
+  margin: 2px 0 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.close {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close:hover {
+  background: var(--border);
+}
+
+.close svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* ---------- Messages ---------- */
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.msg {
+  max-width: 85%;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 0.95rem;
+  overflow-wrap: break-word;
+}
+
+.msg p {
+  margin: 0;
+}
+
+.msg p + p {
+  margin-top: 8px;
+}
+
+.msg-user {
+  align-self: flex-end;
+  background: var(--button-bg);
+  color: var(--on-primary);
+  border-bottom-right-radius: 4px;
+}
+
+.msg-bot {
+  align-self: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 4px;
+}
+
+.sources {
+  margin-top: 8px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.msg a,
+.notice a {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+.notice {
+  align-self: stretch;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 10px 12px;
+  font-size: 0.88rem;
+}
+
+.notice-error {
+  border-left-color: var(--error);
+}
+
+.typing {
+  align-self: flex-start;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  padding: 0 4px;
+}
+
+.typing[hidden] {
+  display: none;
+}
+
+.typing::after {
+  content: "\2026";
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .typing::after {
+    display: inline-block;
+    animation: ngc-ellipsis 1.4s steps(4, end) infinite;
+    content: "";
+    width: 1.2em;
+    overflow: hidden;
+    vertical-align: bottom;
+  }
+
+  @keyframes ngc-ellipsis {
+    0% {
+      content: "";
+    }
+    25% {
+      content: ".";
+    }
+    50% {
+      content: "..";
+    }
+    75% {
+      content: "\2026";
+    }
+  }
+}
+
+/* ---------- Composer ---------- */
+
+.composer {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.input {
+  flex: 1;
+  min-height: 44px;
+  max-height: 120px;
+  resize: none;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.input::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
+.input:disabled {
+  background: var(--surface);
+  color: var(--text-muted);
+}
+
+.send {
+  flex: none;
+  min-width: 64px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 8px;
+  background: var(--button-bg);
+  color: var(--on-primary);
+  font-weight: 600;
+}
+
+.send:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+@media (prefers-color-scheme: dark) {
+  .send:hover:not(:disabled) {
+    background: var(--button-bg);
+    box-shadow: inset 0 0 0 2px var(--primary-hover);
+  }
+}
+
+.send:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ---------- Footnote ---------- */
+
+.footnote {
+  margin: 0;
+  padding: 8px 16px 10px;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  background: var(--bg);
+}

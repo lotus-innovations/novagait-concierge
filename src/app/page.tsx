@@ -1,3 +1,4 @@
+import Script from "next/script";
 import styles from "./page.module.css";
 
 export default function Home() {
@@ -10,11 +11,12 @@ export default function Home() {
         automation chain, human handoff, and an auditable admin panel.
       </p>
       <p>
-        The chat experience is under construction — this skeleton proves the
-        deploy path. The finished widget will also be embedded on the clinic
-        site at{" "}
+        Try it with the chat launcher in the corner of this page, or use the{" "}
+        <a href="/chat">standalone chat page</a>. The same widget is embedded
+        cross-origin on the clinic site at{" "}
         <a href="https://demo.lotusinnovations.io">demo.lotusinnovations.io</a>.
       </p>
+      <Script src="/widget.js" strategy="afterInteractive" data-ngc-auto="1" />
       <p className={styles.disclaimer}>
         Demonstration project by Lotus Innovations. &ldquo;Novagait&rdquo; is a
         fictional brand; all data is synthetic. Not affiliated with any real

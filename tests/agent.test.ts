@@ -10,6 +10,8 @@ import {
 import { extractSources, isMockMode, runAgentTurn } from "@/agent/agent";
 import { buildSystemPrompt, PROMPT_VERSION } from "@/agent/system-prompt";
 import {
+  BOOKING_TOOL_NAME,
+  HANDOFF_TOOL_NAME,
   bookingInputSchema,
   makeBookingTool,
   type ToolCallRecord,
@@ -160,5 +162,36 @@ describe("agent turn (mock mode)", () => {
     expect(turn.sources.length).toBeGreaterThan(0);
     expect(turn.usage.costUsd).toBe(0);
     expect(turn.model).toBe("claude-haiku-4-5");
+  });
+
+  it("runs the real handoff executor on a scripted trigger phrase", async () => {
+    const store = newMemoryStore();
+    const turn = await runAgentTurn({
+      history: [],
+      message: "Can I speak to a human please?",
+      store,
+      sessionId: "vitest-mock-handoff",
+    });
+    expect(turn.mocked).toBe(true);
+    expect(turn.toolCalls.map((c) => c.name)).toContain(HANDOFF_TOOL_NAME);
+    expect(await store.listRange("demo:handoffs", 0, -1)).toHaveLength(1);
+    const meta = await store.get<{ handedOff: boolean }>(
+      "demo:session:vitest-mock-handoff:meta",
+    );
+    expect(meta?.handedOff).toBe(true);
+  });
+
+  it("runs the real booking chain on a scripted trigger phrase", async () => {
+    const store = newMemoryStore();
+    const turn = await runAgentTurn({
+      history: [],
+      message: "I'd like to book an appointment",
+      store,
+      sessionId: "vitest-mock-booking",
+    });
+    expect(turn.mocked).toBe(true);
+    expect(turn.toolCalls.map((c) => c.name)).toContain(BOOKING_TOOL_NAME);
+    expect(turn.reply).toMatch(/NG-\d{4}/);
+    expect(await store.listRange("demo:bookings", 0, -1)).toHaveLength(1);
   });
 });
