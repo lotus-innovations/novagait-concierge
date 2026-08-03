@@ -44,6 +44,11 @@ widget): <https://demo.lotusinnovations.io> · Built by
   daily budget breaker (capacity mode, never raw errors), and a 15-message
   session cap with a walkthrough CTA. Every trip writes a typed audit
   entry. Evidence: `docs/evidence/task4-transcripts.md`.
+- **Admin panel** — `/admin` (HTTP Basic, user `admin`): overview with cost
+  meter + containment status, conversations with full transcripts, Front
+  Desk handoff queue, bookings/CRM/invoices, automation stepper history
+  with the notifications feed. Server-rendered semantic HTML, AA contrast.
+  Evidence: `docs/evidence/task5-admin.md`.
 - A full architecture doc with diagram lands in `docs/architecture.md` at
   release.
 

@@ -161,6 +161,13 @@ export async function POST(req: NextRequest) {
   }
 
   const now = new Date().toISOString();
+  if (transcript.length === 0) {
+    // First turn: register the session in the admin conversations index.
+    await store.listPush(`${DEMO_PREFIX}sessions`, {
+      sessionId,
+      startedAt: now,
+    });
+  }
   transcript.push(
     { role: "user", content: message, at: now },
     { role: "assistant", content: turn.reply, at: now, sources: turn.sources },
