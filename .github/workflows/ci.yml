@@ -39,7 +39,7 @@ jobs:
       # Key-free like everything else in CI: the Playwright webServer runs
       # the production build with MOCK_AGENT=1 (playwright.config.ts).
       - run: npm run e2e
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-traces
