@@ -2,11 +2,12 @@
 
 [![CI](https://github.com/lotus-innovations/novagait-concierge/actions/workflows/ci.yml/badge.svg)](https://github.com/lotus-innovations/novagait-concierge/actions/workflows/ci.yml)
 
-An AI patient concierge for the fictional Novagait Physical Therapy clinic:
-grounded answers with citations from the clinic's own documents, a real
-multi-step booking action driving a visible automation chain, context-carrying
-human handoff, and an admin panel with a full audit trail — all inside provably
-working containment (session caps, rate limits, a daily budget breaker).
+An AI patient concierge for the fictional Novagait Physical Therapy clinic. It
+answers from the clinic's own documents and cites them. A real multi-step
+booking action drives a visible automation chain. Handoff to a human carries
+the conversation context across. An admin panel holds the full audit trail. All
+of it runs inside provably working containment: session caps, rate limits, and
+a daily budget breaker.
 
 > Demonstration project by Lotus Innovations. "Novagait" is a fictional brand;
 > all data is synthetic. Not affiliated with any real clinic or entity.
@@ -17,45 +18,52 @@ widget): <https://demo.lotusinnovations.io> · Built by
 
 ## Architecture
 
-- **Next.js (App Router, TypeScript)** on Vercel — widget bundle, standalone
-  chat page, `/api/*`, and `/admin` in one deployment.
-- **Claude (Haiku 4.5)** via `@anthropic-ai/sdk` — system prompt and tool
+- **Next.js (App Router, TypeScript)** on Vercel. One deployment carries the
+  widget bundle, the standalone chat page, `/api/*`, and `/admin`.
+- **Claude (Haiku 4.5)** via `@anthropic-ai/sdk`. The system prompt and tool
   schemas are versioned files under `src/agent/`, never inline strings.
-- **Retrieval** — dependency-free keyword/BM25 chunk retrieval over `kb/`
-  (synthetic clinic documents); answers cite their source document.
-- **Storage** — Upstash Redis (Vercel Marketplace) behind a thin `Store`
-  interface (`src/lib/store.ts`); an in-memory driver backs local dev and
-  key-free CI. All data is ephemeral demo state by design — nothing in the
+- **Retrieval** is dependency-free keyword and BM25 chunk retrieval over
+  `kb/`, a set of synthetic clinic documents. Answers cite their source.
+- **Storage** is Upstash Redis (Vercel Marketplace), behind a thin `Store`
+  interface in `src/lib/store.ts`. An in-memory driver backs local dev and
+  key-free CI. All data is ephemeral demo state by design, so nothing in the
   store is worth backing up.
-- **Chat endpoint** — `POST /api/chat` (`{sessionId, message}`): retrieval-
-  grounded turn with per-turn audit logging and micro-dollar cost metering
-  into the daily budget key. Live transcripts incl. a medical-advice refusal
-  and an injection attempt: `docs/evidence/task2-transcripts.md`.
-- **Booking + automation chain** — the `book_appointment` tool (SDK beta
-  tool runner) writes the booking and drives a per-booking pipeline: intake
-  record -> CRM entry -> Slack-shaped notification -> draft invoice, with
-  attempt-level history. A demo failure toggle
-  (`POST /api/admin/failure-toggle`) makes the notification step fail once
-  (alert + retry -> success). Stepper view: `/admin/automation` (Basic auth,
-  user `admin`). Evidence: `docs/evidence/task3-transcripts.md`.
-- **Handoff + containment** — `request_human_handoff` tool queues a
-  model-written summary for the Front Desk view and marks the session; the
-  chat route enforces, in order: per-IP sliding-window rate limit (30/hr),
-  daily budget breaker (capacity mode, never raw errors), and a 15-message
-  session cap with a walkthrough CTA. Every trip writes a typed audit
-  entry. Evidence: `docs/evidence/task4-transcripts.md`.
-- **Admin panel** — `/admin` (HTTP Basic, user `admin`): overview with cost
-  meter + containment status, conversations with full transcripts, Front
-  Desk handoff queue, bookings/CRM/invoices, automation stepper history
-  with the notifications feed. Server-rendered semantic HTML, AA contrast.
-  Evidence: `docs/evidence/task5-admin.md`.
-- **Chat widget** — one vanilla-TypeScript bundle (`widget/src`, built with
-  esbuild to `public/widget.js`, ~15 kB, no framework) renders inside a
-  shadow root so widget and host-page styles cannot collide. The same bundle
-  powers the floating launcher and the inline standalone page at `/chat`.
-  Keyboard operable end to end (focus trap while open, focus restore on
-  close, Escape closes), new messages announced via a polite live region,
-  AA contrast in both themes, reduced motion respected, 44px targets.
+- **Chat endpoint** is `POST /api/chat`, taking `{sessionId, message}`. Each
+  turn is retrieval-grounded, audit-logged, and metered in micro-dollars
+  against the daily budget key. Live transcripts, including a medical-advice
+  refusal and an injection attempt, are in
+  `docs/evidence/task2-transcripts.md`.
+- **Booking and the automation chain.** The `book_appointment` tool, on the
+  SDK beta tool runner, writes the booking. It then drives a per-booking
+  pipeline with attempt-level history: intake record, CRM entry,
+  Slack-shaped notification, then draft invoice. A demo failure toggle
+  (`POST /api/admin/failure-toggle`) makes the notification step fail once,
+  which raises an alert and then retries to success. The stepper view is
+  `/admin/automation` under Basic auth, user `admin`. Evidence:
+  `docs/evidence/task3-transcripts.md`.
+- **Handoff.** The `request_human_handoff` tool queues a model-written
+  summary for the Front Desk view, and marks the session.
+- **Containment.** The chat route enforces three limits, in order. First, a per-IP
+  sliding-window rate limit of 30 per hour. Second, a daily budget breaker,
+  which enters capacity mode rather than raising a raw error. Third, a
+  15-message session cap with a walkthrough call to action. Evidence:
+  `docs/evidence/task4-transcripts.md`.
+- **Audit.** Every containment trip writes a typed audit entry.
+- **Admin panel** is `/admin`, under HTTP Basic auth as user `admin`. It
+  carries an overview with the cost meter and containment status. It also
+  holds conversations with full transcripts, and the Front Desk queue. It
+  also carries bookings, CRM and invoices, plus automation stepper history
+  with the notifications feed. The markup is server-rendered semantic HTML at
+  AA contrast. Evidence: `docs/evidence/task5-admin.md`.
+- **Chat widget** is one vanilla-TypeScript bundle, built with esbuild from
+  `widget/src` to `public/widget.js` at about 15 kB with no framework. It
+  renders inside a shadow root, so widget and host-page styles cannot
+  collide. The same bundle powers the floating launcher and the inline
+  standalone page at `/chat`.
+- **Widget accessibility.** It is keyboard operable end to end. There is a
+  focus trap while open, focus restore on close, and Escape to close. New
+  messages are announced through a polite live region. It holds AA contrast
+  in both themes, respects reduced motion, and uses 44px targets.
 - Full architecture doc with diagrams: `docs/architecture.md`.
 
 ## Embedding the widget
@@ -70,17 +78,17 @@ Add one script tag (this is exactly what the clinic site does):
 ></script>
 ```
 
-That renders the floating launcher bottom-right and talks to this app's
-`/api/chat` cross-origin. Origins are allowlisted server-side
-(`src/lib/cors.ts`; default `https://demo.lotusinnovations.io`, override
-with `WIDGET_ALLOWED_ORIGINS`) — an unlisted site can load the script but
-its chat calls are refused by the browser.
+That renders the floating launcher bottom-right, and talks to this app's
+`/api/chat` cross-origin. Origins are allowlisted server-side in
+`src/lib/cors.ts`. The default is `https://demo.lotusinnovations.io`, and
+`WIDGET_ALLOWED_ORIGINS` overrides it. An unlisted site can load the script,
+but the browser refuses its chat calls.
 
 Data attributes / programmatic init:
 
 | Attribute           | `init()` option | Meaning                                                  |
 | ------------------- | --------------- | -------------------------------------------------------- |
-| `data-ngc-auto`     | —               | `1` = initialize on load (otherwise call `init()`)       |
+| `data-ngc-auto`     | none            | `1` = initialize on load (otherwise call `init()`)       |
 | `data-ngc-mode`     | `mode`          | `floating` (default) or `inline`                         |
 | `data-ngc-target`   | `target`        | Selector/element to fill (required for `inline`)         |
 | `data-ngc-endpoint` | `endpoint`      | Chat API URL (default: `/api/chat` on the script origin) |

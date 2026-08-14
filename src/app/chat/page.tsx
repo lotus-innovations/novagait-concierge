@@ -4,9 +4,9 @@ import Script from "next/script";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
-  title: "Chat — Novagait AI Concierge",
+  title: "Chat: Novagait AI Concierge",
   description:
-    "Standalone chat page for the Novagait AI concierge demo: grounded answers with citations, booking, and human handoff. Fictional brand; all data synthetic.",
+    "Standalone chat page for the Novagait AI concierge demo. It gives grounded answers with citations, booking, and human handoff. Fictional brand; all data synthetic.",
 };
 
 /**

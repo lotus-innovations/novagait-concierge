@@ -6,9 +6,10 @@ export default function Home() {
     <main className={styles.main}>
       <h1>Novagait AI Concierge</h1>
       <p className={styles.lede}>
-        An AI patient concierge for the Novagait Physical Therapy demo clinic:
-        grounded answers with citations, appointment booking with a visible
-        automation chain, human handoff, and an auditable admin panel.
+        An AI patient concierge for the Novagait Physical Therapy demo clinic.
+        It gives grounded answers with citations, and books appointments through
+        a visible automation chain. It also hands off to a human, and keeps an
+        auditable admin panel.
       </p>
       <p>
         Try it with the chat launcher in the corner of this page, or use the{" "}
