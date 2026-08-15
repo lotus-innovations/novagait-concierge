@@ -122,7 +122,7 @@ Data attributes / programmatic init:
 ```bash
 nvm use          # Node 22
 npm ci
-npm run dev      # http://localhost:3000 — memory store, no key required
+npm run dev      # http://localhost:3000 (memory store, no key required)
 ```
 
 `npm run lint` (ESLint + Prettier check), `npm run typecheck`,

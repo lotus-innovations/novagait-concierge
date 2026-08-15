@@ -12,10 +12,10 @@ the standalone chat page, the JSON API, and the server-rendered admin panel.
 
 ```mermaid
 flowchart LR
-  subgraph Clinic site — demo.lotusinnovations.io
+  subgraph Clinic site: demo.lotusinnovations.io
     W[widget.js<br/>floating launcher]
   end
-  subgraph Concierge — concierge.lotusinnovations.io
+  subgraph Concierge: concierge.lotusinnovations.io
     CP["/chat (inline widget)"]
     API["/api/chat"]
     ADMIN["/admin/* (Basic auth)"]
