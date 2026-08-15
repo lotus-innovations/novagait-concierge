@@ -5,9 +5,11 @@
 An AI patient concierge for the fictional Novagait Physical Therapy clinic. It
 answers from the clinic's own documents and cites them. A real multi-step
 booking action drives a visible automation chain. Handoff to a human carries
-the conversation context across. An admin panel holds the full audit trail. All
-of it runs inside provably working containment: session caps, rate limits, and
-a daily budget breaker.
+the conversation context across. An admin panel holds the full audit trail.
+
+All of it runs inside containment that is tested rather than asserted. The
+layers are session caps, rate limits, and a daily budget breaker. Each has a
+passing test or a recorded trip.
 
 > Demonstration project by Lotus Innovations. "Novagait" is a fictional brand;
 > all data is synthetic. Not affiliated with any real clinic or entity.

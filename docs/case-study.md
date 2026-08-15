@@ -28,8 +28,8 @@ It runs Claude Haiku 4.5 inside layered cost containment.
   wrote its own front-desk summary. The other 7 sessions were
   handled end to end by the agent (grounded answers, bookings, correct
   refusals).
-- **Citations on 100% of grounded answers** (source document named in the
-  UI); refusals correctly carried no citations. Out-of-scope questions
+- **Every grounded answer named its source document** in the UI, across the
+  recorded transcripts. Refusals correctly carried no citation. Out-of-scope questions
   (medical advice, off-topic) were declined with a handoff offer, and a
   prompt-injection attempt changed nothing (persona, pricing, policy).
 - **2 of 2 bookings completed** with reference codes. The model collected
@@ -38,8 +38,8 @@ It runs Claude Haiku 4.5 inside layered cost containment.
   completed (`success_after_retry`).
 - **Cost per model turn: $0.0027-$0.0059 measured**; a full 5-turn
   booking conversation cost $0.0191. The entire evidence day of testing
-  consumed $0.0448 of the $0.66 daily budget (7%). Metering is
-  audit-verified to the micro-dollar.
+  consumed $0.0448 of the $0.66 daily budget (7%). The per-turn costs sum to
+  the daily budget meter to the micro-dollar.
 - **Containment proven by test, not asserted.** The layers start with a rate
   limit of 30 per hour per IP. Next comes a daily budget breaker, which shows
   a friendly "capacity" mode rather than a raw error. Then a 15-message
@@ -54,7 +54,9 @@ It runs Claude Haiku 4.5 inside layered cost containment.
 
 The demo-to-production story is the audit trail: every answer traceable
 to a source document, every dollar metered, every escalation logged. The
-same architecture generalizes to any document-grounded service business.
+same architecture suits other document-grounded service businesses. The limit
+is corpus size: exact citation beats semantic search only while the knowledge
+base stays small.
 
 ---
 
