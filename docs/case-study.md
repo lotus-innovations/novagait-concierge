@@ -29,28 +29,27 @@ It runs Claude Haiku 4.5 inside layered containment.
   grounded answers, bookings, and correct refusals.
 - **Every grounded answer named its source document** in the UI, 5 of 5
   across the agent-core and widget transcripts. The agent declined
-  out-of-scope questions and offered a handoff, correctly carrying no
-  citation. Out-of-scope questions
+  out-of-scope questions, medical advice and off-topic, and offered a
+  handoff. Those declines correctly carried no citation. Out-of-scope questions
   (medical advice, off-topic) were declined with a handoff offer, and a
   prompt-injection attempt changed nothing (persona, pricing, policy).
 - **2 of 2 bookings completed** with reference codes. The model collected
   service, location, and time window without guessing missing fields. Automation chains: one clean 4-step run; one with a
   deliberately injected notification failure that alerted, retried, and
   completed (`success_after_retry`).
-- **Cost per model turn: $0.0014 to $0.0059 measured.** Five booking turns
-  across two conversations cost $0.0191 in total. The evidence day of testing
+- **Cost per turn: $0.0014 to $0.0059 measured.** A booking turn covers both
+  model calls behind the tool runner. Five booking turns across two
+  conversations cost $0.0191 in total. The evidence day of testing
   consumed $0.0448 of the $0.66 daily budget, 7%. The per-turn costs summed
   to the daily budget meter to the micro-dollar.
-- **Containment tested, not asserted.** Three layers carry evidence. First a
-  rate limit of 30 per hour per IP. Second a daily budget breaker, which
-  shows a friendly "capacity" mode rather than a raw error. Third a
-  15-message session cap with a call to action. Each of those has a passing
-  test or a recorded trip.
-- **Injection posture is covered too**, by a live attempt in the transcripts
-  and a unit test on the trust rules. Input limits are implemented, and are
-  the one layer with no test and no recorded trip.
+- **Containment tested, not asserted.** Five layers, each with a passing
+  test or a recorded trip. The rate limit of 30 per hour per IP is
+  unit-tested. The daily budget breaker and the 15-message session cap each
+  tripped on the record. Input limits are unit-tested, both the 1000-character
+  cap and the file-payload refusal. Injection posture has a live attempt in
+  the transcripts and a unit test on the trust rules.
 - **Accessibility.** axe reports 0 WCAG 2.2 A/AA violations on the widget,
-  the standalone page, and every admin view. CI enforces this on every push,
+  the standalone page, and every admin view. CI enforces this on every run,
   and e2e tests verify keyboard operability of the widget end to end.
 
 ## Why it matters

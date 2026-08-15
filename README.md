@@ -45,8 +45,7 @@ widget): <https://demo.lotusinnovations.io> · Built by
   `docs/evidence/task3-transcripts.md`.
 - **Handoff.** The `request_human_handoff` tool queues a model-written
   summary for the Front Desk view, and marks the session.
-- **Containment.** The chat route enforces three limits, in order. First, a per-IP
-  sliding-window rate limit of 30 per hour. Second, a daily budget breaker,
+- **Containment.** The chat route enforces three limits, in order. First, a sliding-window rate limit of 30 per hour for each IP. Second, a daily budget breaker,
   which enters capacity mode rather than raising a raw error. Third, a
   15-message session cap with a walkthrough call to action. Evidence:
   `docs/evidence/task4-transcripts.md`.
